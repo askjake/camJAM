@@ -815,7 +815,7 @@ def health():
 def get_anomaly_clip(clip_id):
     clip_path = anomaly_recorder.get_clip_path(clip_id)
     if clip_path and clip_path.exists():
-        return send_file(clip_path, mimetype="video/mp4")
+        return send_file(clip_path, mimetype="video/mp4", as_attachment=False, conditional=True)
     return "Clip not found", 404
 
 @app.route("/api/anomaly_thumbnail/<clip_id>")
