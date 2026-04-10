@@ -72,3 +72,10 @@ Thumbs.db
 *.crt
 config.ini
 secrets.json
+full-gpu/anomaly_clips/
+full-gpu/app/anomaly_clips/
+full-gpu/models/
+full-gpu/knowledge/
+*.mp4
+*.jpg
+*.pth
