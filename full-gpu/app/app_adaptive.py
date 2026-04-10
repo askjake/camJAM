@@ -2,14 +2,14 @@
 """
 ╔══════════════════════════════════════════════════════════════════════════════╗
 ║                                                                              ║
-║       🧠 ADAPTIVE ML CAMERA MONITOR - INTELLIGENT LEARNING v2.1 🧠          ║
+║       🧠 ADAPTIVE ML CAMERA MONITOR - INTELLIGENT LEARNING v2.2 🧠          ║
 ║                                                                              ║
-║              BUGFIX: Camera variable scope + V4L2 timeout handling           ║
+║         NEW FEATURE: Automatic Anomaly Video Capture + Recording             ║
 ║                                                                              ║
 ╚══════════════════════════════════════════════════════════════════════════════╝
 """
 
-from flask import Flask, Response, render_template_string, jsonify, request
+from flask import Flask, Response, render_template_string, jsonify, request, send_file
 import cv2
 import threading
 import time
@@ -49,6 +49,9 @@ logging.basicConfig(
 )
 log = logging.getLogger("adaptive-ml")
 
+from anomaly_recorder import AnomalyRecorder
+import uuid
+
 app = Flask(__name__)
 
 # Directories
@@ -57,8 +60,9 @@ SNAP_DIR = BASE_DIR / "snapshots"
 VIDEO_DIR = BASE_DIR / "recordings"
 MODEL_DIR = BASE_DIR / "models"
 KNOWLEDGE_DIR = BASE_DIR / "knowledge"
+ANOMALY_CLIPS_DIR = BASE_DIR / "anomaly_clips"
 
-for d in [SNAP_DIR, VIDEO_DIR, MODEL_DIR, KNOWLEDGE_DIR]:
+for d in [SNAP_DIR, VIDEO_DIR, MODEL_DIR, KNOWLEDGE_DIR, ANOMALY_CLIPS_DIR]:
     d.mkdir(parents=True, exist_ok=True)
 
 
@@ -603,6 +607,9 @@ def get_current_fps():
 
 
 # ==================== CAPTURE LOOP ====================
+# Initialize anomaly recorder
+anomaly_recorder = AnomalyRecorder(ANOMALY_CLIPS_DIR, fps=30)
+
 def capture_loop():
     global latest_frame, frame_count, camera
     
@@ -656,7 +663,20 @@ def capture_loop():
             
             anomalies = analyze_scene(frame, detected_objects, motion_score)
             
+
             annotated = annotate_frame(frame, anomalies)
+            
+            # Anomaly recording logic
+            anomaly_recorder.add_frame(annotated)
+            
+            if anomalies and not anomaly_recorder.is_recording:
+                clip_id = anomaly_recorder.start_recording(anomalies[0])
+                if clip_id:
+                    anomalies[0]["clip_id"] = clip_id
+            
+            if anomaly_recorder.is_recording:
+                anomaly_recorder.record_frame(annotated)
+
             
             latest_frame = annotated.copy()
             frame_count += 1
@@ -771,6 +791,22 @@ def health():
         "confidence": knowledge_base.confidence_score
     }), 200 if cam_ok else 503
 
+
+
+
+@app.route("/api/anomaly_clip/<clip_id>")
+def get_anomaly_clip(clip_id):
+    clip_path = anomaly_recorder.get_clip_path(clip_id)
+    if clip_path and clip_path.exists():
+        return send_file(clip_path, mimetype="video/mp4")
+    return "Clip not found", 404
+
+@app.route("/api/anomaly_thumbnail/<clip_id>")
+def get_anomaly_thumbnail(clip_id):
+    thumb_path = anomaly_recorder.get_thumbnail_path(clip_id)
+    if thumb_path and thumb_path.exists():
+        return send_file(thumb_path, mimetype="image/jpeg")
+    return "Thumbnail not found", 404
 
 if __name__ == "__main__":
     log.info("="*80)
