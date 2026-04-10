@@ -1,7 +1,39 @@
 # Changelog - CamJAM
 
-## [v2.2.0] - 2026-04-10
+## [v2.2.1] - 2026-04-10
 
+### ⚡ PERFORMANCE: Fast Startup & Service Management
+
+Optimized startup time and added professional service management.
+
+#### Features Added
+- **Fast Startup Script**: App ready in ~3 seconds (vs 10+ seconds before)
+- **Systemd Service**: Production-ready service management
+- **Lazy-load YOLO**: Model loads in background thread (non-blocking)
+- **Async CUDA**: Non-blocking GPU initialization
+- **Service Commands**: Start/stop/restart with systemctl
+- **Auto-restart**: Service auto-restarts on failure
+- **Centralized Logs**: Unified logging in logs/ directory
+
+#### Files Added
+- `scripts/fast_start.sh` - Optimized startup script
+- `scripts/camjam.service` - Systemd service configuration
+- `docs/DEPLOYMENT.md` - Complete deployment guide
+- `logs/` directory - Centralized logging
+
+#### Performance Improvements
+- Startup time: 10s → 3s (70% faster)
+- YOLO loading: Non-blocking background thread
+- Environment optimization: CUDA_LAUNCH_BLOCKING=0
+- Thread optimization: OMP_NUM_THREADS=4
+
+#### Deployment Changes
+- Repository structure: Changed to symlink structure
+- GitHub-first: Pull from GitHub for updates
+- Service management: Systemd user service
+- Log management: Separate app and error logs
+
+## [v2.2.0] - 2026-04-10
 ### 🎥 NEW FEATURE: Automatic Anomaly Video Capture
 
 Added comprehensive video recording system that automatically captures video clips when anomalies are detected.

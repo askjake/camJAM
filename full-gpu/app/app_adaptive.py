@@ -2,9 +2,9 @@
 """
 ╔══════════════════════════════════════════════════════════════════════════════╗
 ║                                                                              ║
-║       🧠 ADAPTIVE ML CAMERA MONITOR - INTELLIGENT LEARNING v2.2 🧠          ║
+║       🧠 ADAPTIVE ML CAMERA MONITOR - INTELLIGENT LEARNING v2.2.1 🧠        ║
 ║                                                                              ║
-║         NEW FEATURE: Automatic Anomaly Video Capture + Recording             ║
+║    NEW: Anomaly Video Capture + OPTIMIZED: Fast Startup (lazy-load YOLO)    ║
 ║                                                                              ║
 ╚══════════════════════════════════════════════════════════════════════════════╝
 """
@@ -244,17 +244,34 @@ learning_mode = "INITIAL"
 anomaly_alerts = deque(maxlen=100)
 last_save_frame = 0
 
-# Try to load YOLO
+# Lazy-load YOLO to avoid startup hang
 yolo_model = None
-try:
-    from ultralytics import YOLO
-    log.info(f"🔥 Loading YOLO on {DEVICE}...")
-    yolo_model = YOLO('yolov8n.pt')
-    if CUDA_AVAILABLE:
-        yolo_model.to(DEVICE)
-    log.info("✅ YOLO loaded")
-except Exception as e:
-    log.warning(f"⚠️  YOLO unavailable: {e}")
+yolo_loading = False
+yolo_loaded = False
+
+def load_yolo_async():
+    """Load YOLO model in background thread to speed up startup"""
+    global yolo_model, yolo_loading, yolo_loaded
+    if yolo_loaded or yolo_loading:
+        return
+    
+    yolo_loading = True
+    try:
+        from ultralytics import YOLO
+        log.info(f"🔥 Loading YOLO on {DEVICE} (background)...")
+        yolo_model = YOLO('yolov8n.pt')
+        if CUDA_AVAILABLE:
+            yolo_model.to(DEVICE)
+        yolo_loaded = True
+        log.info("✅ YOLO loaded successfully")
+    except Exception as e:
+        log.warning(f"⚠️  YOLO unavailable: {e}")
+    finally:
+        yolo_loading = False
+
+# Start YOLO loading in background thread (non-blocking)
+log.info("⚡ Starting YOLO load in background...")
+threading.Thread(target=load_yolo_async, daemon=True).start()
 
 # Face detection
 face_cascade = None
@@ -810,7 +827,7 @@ def get_anomaly_thumbnail(clip_id):
 
 if __name__ == "__main__":
     log.info("="*80)
-    log.info("🧠 ADAPTIVE ML CAMERA MONITOR v2.1 (BUGFIX)")
+    log.info("🧠 ADAPTIVE ML CAMERA MONITOR v2.2.1 (PERFORMANCE)")
     log.info("="*80)
     log.info(f"Device: {DEVICE} ({GPU_NAME})")
     log.info(f"Learning Threshold: {LEARNING_FRAMES_THRESHOLD} frames")

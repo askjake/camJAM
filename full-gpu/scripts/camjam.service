@@ -1,0 +1,20 @@
+[Unit]
+Description=CamJAM v2.2.0 - Adaptive ML Camera Monitor with Anomaly Recording
+After=network.target
+
+[Service]
+Type=simple
+User=montjac
+WorkingDirectory=/home/montjac/camera-monitor-advanced
+Environment="PATH=/home/montjac/camera-monitor-advanced/venv/bin:/usr/local/bin:/usr/bin:/bin"
+Environment="PYTHONUNBUFFERED=1"
+Environment="CUDA_LAUNCH_BLOCKING=0"
+Environment="OMP_NUM_THREADS=4"
+ExecStart=/home/montjac/camera-monitor-advanced/venv/bin/python3 /home/montjac/camera-monitor-advanced/app/app_adaptive.py
+Restart=on-failure
+RestartSec=10
+StandardOutput=append:/home/montjac/camera-monitor-advanced/logs/app.log
+StandardError=append:/home/montjac/camera-monitor-advanced/logs/error.log
+
+[Install]
+WantedBy=multi-user.target
